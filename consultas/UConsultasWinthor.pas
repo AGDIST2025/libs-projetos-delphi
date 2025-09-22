@@ -454,7 +454,19 @@ begin
         ' AND DTEXCLUSAO IS NOT NULL ', '');
 
     filial:
-      Result := ' SELECT TO_CHAR(CODIGO) AS CODIGO, FANTASIA AS DESCRICAO FROM PCFILIAL WHERE FANTASIA LIKE ''%'' || :BUSCA || ''%'' ';
+      begin
+        Result := ' SELECT                                                               ';
+        Result := Result + '     CODIGO                                                  ';
+        Result := Result + '     , FANTASIA AS DESCRICAO                                 ';
+        Result := Result + ' FROM (                                                      ';
+        Result := Result + ' SELECT TO_CHAR(CODIGO) AS CODIGO, FANTASIA                  ';
+        Result := Result + ' FROM PCFILIAL                                               ';
+        Result := Result + ' UNION ALL                                                   ';
+        Result := Result + ' SELECT ''99'' AS CODIGO, ''TODAS AS FILIAIS'' AS FANTASIA   ';
+        Result := Result + ' FROM DUAL                                                   ';
+        Result := Result + ' )                                                           ';
+        Result := Result + ' WHERE FANTASIA LIKE ''%'' || :BUSCA || ''%''                ';
+      end;
 
     transportadora:
       Result := ' SELECT TO_CHAR(CODFORNEC) AS CODIGO, FORNECEDOR AS DESCRICAO FROM PCFORNEC WHERE REVENDA = ''T'' AND FORNECEDOR LIKE ''%'' || :BUSCA || ''%'' ';
@@ -639,6 +651,13 @@ var
   query: TOraQuery;
 
 begin
+
+  if (tipoConsulta = filial) and (codigoPesquisa = '99') then
+  begin
+
+    Result := 'TODAS AS FILIAIS';
+    Exit;
+  end;
 
   // Usando opções antes da chamada da pesquisa
   // TConsulta.Opcao(apenasAtivos).PesquisarPorCodigo(usuario, 14);
