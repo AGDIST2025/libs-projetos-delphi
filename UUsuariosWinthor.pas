@@ -26,6 +26,7 @@ type
     /// Rotina 9868
     FCodigoCracha: String;
     FAtivo: Boolean;
+    FTipoVenda: Boolean;
 
   protected
     function GetMatricula(): Double;
@@ -36,6 +37,7 @@ type
     function GetEmail(): String;
     function GetCodigoCracha(): String;
     function GetAtivo(): Boolean;
+    function GetTipoVenda(): Boolean;
 
   public
 
@@ -49,6 +51,7 @@ type
     property Email: String read GetEmail write FEmail;
     property CodigoCracha: String read GetCodigoCracha;
     property Ativo: Boolean read GetAtivo;
+    property TipoVenda: Boolean read GetTipoVenda;
 
     constructor Create();
 
@@ -122,6 +125,12 @@ begin
 
 end;
 
+function TUsuario.GetTipoVenda: Boolean;
+begin
+
+  Result := self.FTipoVenda;
+end;
+
 function TUsuario.GetEmail: String;
 begin
 
@@ -145,14 +154,21 @@ end;
 { TUsuarioController }
 
 constructor TUsuarioController.Create(aOraSession: TOraSession);
+var
+  sql: TStringList;
 begin
 
+  sql := TStringList.Create;
+  sql.Add('SELECT pcempr.matricula, pcempr.nome,      ');
+  sql.Add(' pcempr.nome_guerra, pcempr.codfilial ,    ');
+  sql.Add(' pcempr.codsetor, pcempr.email ,           ');
+  sql.Add(' nvl(pcempr.codbarra, '''') as codbarra,   ');
+  sql.Add(' nvl(pcempr.situacao, ''I'') AS SITUACAO,  ');
+  sql.Add(' NVL(pcempr.tipovenda, ''N'') AS TIPOVENDA ');
+  sql.Add(' FROM pcempr                               ');
+
   Self.OdacSession := aOraSession;
-  Self.ConsultaComum := 'SELECT pcempr.matricula, pcempr.nome, ' +
-    ' pcempr.nome_guerra, pcempr.codfilial , ' +
-    ' pcempr.codsetor, pcempr.email , ' +
-    ' nvl(pcempr.codbarra, '''') as codbarra,  ' +
-    ' nvl(pcempr.situacao, ''I'') AS SITUACAO ' + ' FROM pcempr ';
+  Self.ConsultaComum := sql.Text;
 
 end;
 
@@ -226,6 +242,7 @@ begin
     usuario.FEmail := qry.FieldByName('EMAIL').AsString;
     usuario.FCodigoCracha := qry.FieldByName('CODBARRA').AsString;
     usuario.FAtivo := qry.FieldByName('SITUACAO').AsString = 'A';
+    usuario.FTipoVenda := qry.FieldByName('TIPOVENDA').AsString = 'S';
 
     Self.GetFiliaisUsuario(usuario);
 
@@ -235,8 +252,7 @@ begin
 
 end;
 
-function TUsuarioController.GetUsuarioPorMatricula(aMatriculaUsuario: Double)
-  : TUsuario;
+function TUsuarioController.GetUsuarioPorMatricula(aMatriculaUsuario: Double): TUsuario;
 var
   qry: TOraQuery;
   usuario: TUsuario;
@@ -275,6 +291,7 @@ begin
     usuario.FEmail := qry.FieldByName('EMAIL').AsString;
     usuario.FCodigoCracha := qry.FieldByName('CODBARRA').AsString;
     usuario.FAtivo := qry.FieldByName('SITUACAO').AsString = 'A';
+    usuario.FTipoVenda := qry.FieldByName('TIPOVENDA').AsString = 'S';
 
     Self.GetFiliaisUsuario(usuario);
 
@@ -287,8 +304,7 @@ begin
 
 end;
 
-function TUsuarioController.PossuiAcesso(AUsuario: TUsuario;
-  ACodigoRotina, ACodSubRotina: Double): Boolean;
+function TUsuarioController.PossuiAcesso(AUsuario: TUsuario; ACodigoRotina, ACodSubRotina: Double): Boolean;
 var
   qry: TOraQuery;
 
@@ -332,8 +348,7 @@ begin
 
 end;
 
-function TUsuarioController.GetUsuarioPorCracha(aCodigoCracha: String)
-  : TUsuario;
+function TUsuarioController.GetUsuarioPorCracha(aCodigoCracha: String): TUsuario;
 var
   qry: TOraQuery;
   usuario: TUsuario;
@@ -379,6 +394,7 @@ begin
     usuario.FEmail := qry.FieldByName('EMAIL').AsString;
     usuario.FCodigoCracha := qry.FieldByName('CODBARRA').AsString;
     usuario.FAtivo := qry.FieldByName('SITUACAO').AsString = 'A';
+    usuario.FTipoVenda := qry.FieldByName('TIPOVENDA').AsString = 'S';
 
     Self.GetFiliaisUsuario(usuario);
 

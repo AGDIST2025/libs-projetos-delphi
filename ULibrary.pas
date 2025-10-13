@@ -128,7 +128,7 @@ procedure CopiarArquivo(Origem, Destino: String);
 function ConverteListaEmStringParaComandoSQL(aLista: TStringList; aIncluirAspas: Boolean = true): String;
 function DiferencaEntreDatasEmHoras(ADataInicial, ADataFinal: TDateTime): String;
 function ObtemConfiguracao(ACodfilial: String; ACodConfiguracao: Double): String;
-function ObtemConfiguracaoFloat(ACodfilial: String; ACodConfiguracao: Double): double;
+function ObtemConfiguracaoFloat(ACodfilial: String; ACodConfiguracao: Double): Double;
 
 function AbrirManualUsuario(ACodigoRotina: String; ANumeroVersao: String): Boolean;
 
@@ -171,7 +171,7 @@ Procedure GravaLog(const usrlog: Variant; const dtlog: TDateTime; const modlog: 
   const idlog: Variant);
 // asn     Procedure abrirConexaoBDE;
 // Procedure abrirConexaoODAC(ASessaoPadrao: TOraSession = nil);
-Procedure abrirConexaoODAC(servidor: string = ''; usuario: string = ''; senha: string = '');
+Procedure abrirConexaoODAC(servidor: string = ''; usuario: string = ''; Senha: string = '');
 // asn     Procedure abrirConexaoBDESemparametros(pnomebase:string;pnomeusuario:string;psenha:string);
 // asn     Procedure abrirConexaoODACSemparametros(pnomebase:string;pnomeusuario:string;psenha:string);
 procedure AtribuiDbName(F: TForm; DbName: TOraSession);
@@ -191,8 +191,8 @@ function PadRight(AStringAtual: String; ACaracterACompletar: Char; ATamanhoTotal
 function EnviarEmail(AEnderecoHost, ANomeUsuario, ASenha, AEmailRemetente, ANomeRemetente, AEmailParaResposta, ACorpoEmail, AAssunto: String;
   ADestinatarios: TStringList; var ARespostaServidor: String): Boolean;
 
-procedure SalvarLayoutDosGridsDoForm(AFormulario: TForm);
-procedure RestaurarLayoutDosGridsDoForm(AFormulario: TForm);
+procedure SalvarLayoutDosGridsDoForm(AFormulario: TForm; ADiretorioBase: string = '');
+procedure RestaurarLayoutDosGridsDoForm(AFormulario: TForm; ADiretorioBase: string = '');
 function VerificaVersao(ACodigoRotina: Double; AExibirMensagens: Boolean = true): Boolean;
 function IniciaOS(AnumOS: Double; Amatricula: Double; AColetor: Boolean = false): Boolean;
 function FechaOS(AnumOS: Double; AtipoOS: integer { 1-Separação, 2-Recebimento, 3-Transferência }
@@ -242,7 +242,7 @@ implementation
 type
   TChars = set of Char;
 
-Procedure abrirConexaoODAC(servidor: string = ''; usuario: string = ''; senha: string = '');
+Procedure abrirConexaoODAC(servidor: string = ''; usuario: string = ''; Senha: string = '');
 
   procedure DefineParametrosConexao(AServidor, AUsuario, ASenha: string);
   const
@@ -289,7 +289,8 @@ begin
       if (ParamCount = 6) and (ParamStr(6) = 'DEBUG') then
       begin
 
-        ODACSessionGlobal.ConnectString := 'Direct=True;Host=10.0.1.204;Service Name=WINT;User ID=ESPERANCA;Password=TESTEESPERANCA;Login Prompt=False';
+        ODACSessionGlobal.ConnectString :=
+          'Direct=True;Host=10.0.1.204;Service Name=WINT;User ID=ESPERANCA;Password=TESTEESPERANCA;Login Prompt=False';
         ODACSessionGlobal.Connected := true;
       end
       else
@@ -309,15 +310,14 @@ begin
           usuario := ParamStr(4);
         end;
 
-        if senha = '' then
+        if Senha = '' then
         begin
-          senha := ParamStr(2);
+          Senha := ParamStr(2);
         end;
 
-        DefineParametrosConexao(
-          servidor, // tela de Login do Winthor = Loja
+        DefineParametrosConexao(servidor, // tela de Login do Winthor = Loja
           usuario, // tela de Login do Winthor = Empresa
-          senha // associado a chave do Winthor.ini
+          Senha // associado a chave do Winthor.ini
           );
 
         ODACSessionGlobal.Connected := true;
@@ -2842,10 +2842,10 @@ begin
 
 end;
 
-function ObtemConfiguracaoFloat(ACodfilial: String; ACodConfiguracao: Double): double;
+function ObtemConfiguracaoFloat(ACodfilial: String; ACodConfiguracao: Double): Double;
 var
   valor_string: string;
-  valor_float: double;
+  valor_float: Double;
 begin
 
   valor_string := ObtemConfiguracao(ACodfilial, ACodConfiguracao);
@@ -2950,24 +2950,27 @@ begin
 
 end;
 
-procedure SalvarLayoutDosGridsDoForm(AFormulario: TForm);
+procedure SalvarLayoutDosGridsDoForm(AFormulario: TForm; ADiretorioBase: string = '');
 var
-  pasta_executavel, padrao_nome_layout: String;
+  diretorio_base, padrao_nome_layout: String;
   i: integer;
   gridComum: TcxGridDBTableView;
   gridBanded: TcxGridDBBandedTableView;
 begin
 
-  /// Jhonny Oliveira - 01/12/2014
-  /// Salvando o layout de todos os grids da DevExpress do formulário indicado
-  pasta_executavel := ExcludeTrailingBackslash(ExtractFilePath(Application.Exename)) + '\grids\';
+  diretorio_base := ADiretorioBase;
 
-  ForceDirectories(pasta_executavel);
+  if diretorio_base = '' then
+  begin
 
-  // Utiliza os dois primeiros números da versão para encontrar o layout.
-  // Isto por que esses dois números indicam grandes alterações de layout na rotina
-  // como um todo.
-  padrao_nome_layout := pasta_executavel + ParamStr(5) + '_v' + Copy(Retorna_Versao, 1, 3) + '_' + ParamStr(1) + '_';
+    /// Jhonny Oliveira - 01/12/2014
+    /// Salvando o layout de todos os grids da DevExpress do formulário indicado
+    diretorio_base := IncludeTrailingPathDelimiter((ExtractFilePath(Application.Exename))) + 'grids';
+  end;
+
+  ForceDirectories(diretorio_base);
+  diretorio_base := IncludeTrailingPathDelimiter(diretorio_base);
+  padrao_nome_layout := diretorio_base + ParamStr(5) + '_v' + Retorna_Versao() + '_' + ParamStr(1) + '_';
 
   for i := 0 to AFormulario.ComponentCount - 1 do
   begin
@@ -2991,24 +2994,27 @@ begin
 
 end;
 
-procedure RestaurarLayoutDosGridsDoForm(AFormulario: TForm);
+procedure RestaurarLayoutDosGridsDoForm(AFormulario: TForm; ADiretorioBase: string = '');
 var
   i: integer;
   gridComum: TcxGridDBTableView;
   gridBanded: TcxGridDBBandedTableView;
-  pasta_executavel: String;
+  diretorio_base: String;
   padrao_nome_layout: String;
 
 begin
 
-  /// Jhonny Oliveira - 01/12/2014
-  /// Restaurando o layout de todos os grids da DevExpress do formulário indicado
-  pasta_executavel := ExcludeTrailingBackslash(ExtractFilePath(Application.Exename)) + '\grids\';
+  diretorio_base := ADiretorioBase;
 
-  // Utiliza os dois primeiros números da versão para encontrar o layout.
-  // Isto por que esses dois números indicam grandes alterações de layout na rotina
-  // como um todo.
-  padrao_nome_layout := pasta_executavel + ParamStr(5) + '_v' + Copy(Retorna_Versao, 1, 3) + '_' + ParamStr(1) + '_';
+  if diretorio_base = '' then
+  begin
+    /// Restaurando o layout de todos os grids da DevExpress do formulário indicado
+    diretorio_base := IncludeTrailingPathDelimiter((ExtractFilePath(Application.Exename))) + 'grids';
+  end;
+
+  ForceDirectories(diretorio_base);
+  diretorio_base := IncludeTrailingPathDelimiter(diretorio_base);
+  padrao_nome_layout := diretorio_base + ParamStr(5) + '_v' + Retorna_Versao() + '_' + ParamStr(1) + '_';
 
   for i := 0 to AFormulario.ComponentCount - 1 do
   begin
